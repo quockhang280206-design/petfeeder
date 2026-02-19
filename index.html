@@ -1,6 +1,6 @@
 <script>
   // =======================
-  // CONFIG (giữ mô phỏng UI)
+  // CONFIG
   // =======================
   const CONFIG = {
     totalCapacity: 1000,
@@ -18,6 +18,40 @@
     }
   };
 
+  // =======================
+  // DOM helpers (chống crash)
+  // =======================
+  const $ = (id) => document.getElementById(id);
+
+  function setText(id, text) {
+    const el = $(id);
+    if (el) el.textContent = text;
+  }
+
+  function setHTML(id, html) {
+    const el = $(id);
+    if (el) el.innerHTML = html;
+  }
+
+  function setWidth(id, w) {
+    const el = $(id);
+    if (el) el.style.width = w;
+  }
+
+  // =======================
+  // Fetch helper (timeout)
+  // =======================
+  async function fetchWithTimeout(url, options = {}, timeoutMs = 2500) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { ...options, signal: ctrl.signal, cache: 'no-store' });
+      return res;
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
   // ============
   // LocalStorage
   // ============
@@ -31,6 +65,7 @@
         if (data.lastDate !== today) {
           systemData.todayFeedings = [];
           systemData.currentFood = CONFIG.totalCapacity;
+          systemData.schedules = data.schedules ?? [];
         } else {
           systemData.currentFood = data.currentFood ?? CONFIG.totalCapacity;
           systemData.todayFeedings = data.todayFeedings ?? [];
@@ -54,33 +89,30 @@
   }
 
   // =======================
-  // Slider (UI portion)
-  // =======================
-  const portionSlider = document.getElementById('portionSlider');
-  const portionDisplay = document.getElementById('portionDisplay');
-  portionSlider.addEventListener('input', function () {
-    portionDisplay.textContent = this.value + 'g';
-  });
-
-  // =======================
   // ESP32 API helpers
   // =======================
   async function apiStatus() {
     const t0 = performance.now();
-    const r = await fetch('/api/status', { cache: 'no-store' });
+    const r = await fetchWithTimeout('/api/status', {}, 2500);
     const t1 = performance.now();
+
+    if (!r.ok) throw new Error('status_http_' + r.status);
+
     const j = await r.json();
     systemData.connectionStats.lastPing = Math.round(t1 - t0);
     return j;
   }
 
   async function apiFeed() {
-    const r = await fetch('/api/feed', { method: 'POST' });
+    const r = await fetchWithTimeout('/api/feed', { method: 'POST' }, 4000);
+    if (!r.ok) throw new Error('feed_http_' + r.status);
     return await r.json();
   }
 
   function setOnlineUI(isOnline) {
-    const badge = document.getElementById('statusBadge');
+    const badge = $('statusBadge');
+    if (!badge) return;
+
     if (isOnline) {
       badge.textContent = 'Online';
       badge.classList.remove('status-offline');
@@ -97,21 +129,16 @@
       const st = await apiStatus();
       setOnlineUI(true);
 
-      // ping + lastUpdate lấy từ ESP32
-      document.getElementById('pingTime').textContent = systemData.connectionStats.lastPing;
-      document.getElementById('lastUpdate').textContent = st.time || '---';
-
-      // (tùy chọn) nếu muốn hiện IP từ ESP32:
-      // console.log('ESP IP:', st.ip);
-
+      setText('pingTime', String(systemData.connectionStats.lastPing));
+      setText('lastUpdate', st.time || '---');
     } catch (e) {
       setOnlineUI(false);
-      // giữ lại số ping cũ, nhưng báo offline
+      // không throw để tránh làm chết timer
     }
   }
 
   // =======================
-  // Mô phỏng (giữ lại để thống kê UI)
+  // Mô phỏng (UI thống kê)
   // =======================
   function simulateServoFeeding(targetPortion) {
     let actualAmount = 0;
@@ -140,44 +167,61 @@
   }
 
   // =======================
-  // Feed Now: gọi ESP32 thật + cập nhật UI
+  // Feed Now
   // =======================
   async function feedNow() {
-    const btn = document.getElementById('feedNowBtn');
-    const alertDiv = document.getElementById('feedAlert');
-    const targetPortion = parseInt(portionSlider.value);
+    const btn = $('feedNowBtn');
+    const alertDiv = $('feedAlert');
 
-    // Nếu muốn bỏ check mô phỏng, bạn có thể xóa block này.
-    if (systemData.currentFood < targetPortion) {
-      alertDiv.innerHTML = `
-        <div class="alert alert-error">
-          ⚠️ Không đủ thức ăn! Còn lại ${systemData.currentFood}g, cần ${targetPortion}g
-        </div>`;
+    // slider có thể chưa có -> chặn
+    const portionSlider = $('portionSlider');
+    if (!portionSlider) {
+      if (alertDiv) alertDiv.innerHTML = `<div class="alert alert-error">❌ Thiếu phần tử #portionSlider trong HTML</div>`;
       return;
     }
 
-    btn.disabled = true;
-    btn.innerHTML = '⏳ Đang cho ăn...';
-    alertDiv.innerHTML = '';
+    const targetPortion = parseInt(portionSlider.value, 10);
+    if (!Number.isFinite(targetPortion) || targetPortion <= 0) {
+      if (alertDiv) alertDiv.innerHTML = `<div class="alert alert-warning">⚠️ Khẩu phần không hợp lệ</div>`;
+      return;
+    }
+
+    // check mô phỏng tồn kho UI
+    if (systemData.currentFood < targetPortion) {
+      if (alertDiv) {
+        alertDiv.innerHTML = `
+          <div class="alert alert-error">
+            ⚠️ Không đủ thức ăn! Còn lại ${systemData.currentFood}g, cần ${targetPortion}g
+          </div>`;
+      }
+      return;
+    }
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Đang cho ăn...';
+    }
+    if (alertDiv) alertDiv.innerHTML = '';
 
     // 1) GỌI ESP32 THẬT
     try {
       const j = await apiFeed();
-      if (!j.ok) {
-        alertDiv.innerHTML = `<div class="alert alert-warning">⚠️ ESP32 bận: ${j.err || 'busy'}</div>`;
-        btn.disabled = false;
-        btn.innerHTML = '🍽️ Cho ăn ngay';
+
+      // kỳ vọng ESP32 trả { ok: true } hoặc { ok:false, err:"busy" }
+      if (!j || j.ok !== true) {
+        if (alertDiv) alertDiv.innerHTML =
+          `<div class="alert alert-warning">⚠️ ESP32 bận: ${(j && j.err) ? j.err : 'busy'}</div>`;
+        if (btn) { btn.disabled = false; btn.innerHTML = '🍽️ Cho ăn ngay'; }
         return;
       }
     } catch (e) {
-      alertDiv.innerHTML = `<div class="alert alert-error">❌ Không kết nối được ESP32</div>`;
-      btn.disabled = false;
-      btn.innerHTML = '🍽️ Cho ăn ngay';
+      if (alertDiv) alertDiv.innerHTML = `<div class="alert alert-error">❌ Không kết nối được ESP32</div>`;
+      if (btn) { btn.disabled = false; btn.innerHTML = '🍽️ Cho ăn ngay'; }
       setOnlineUI(false);
       return;
     }
 
-    // 2) UI mô phỏng (để có thống kê đẹp). Servo thật đã chạy ở bước trên.
+    // 2) UI mô phỏng để có thống kê
     await new Promise(resolve => setTimeout(resolve, 800));
     const result = simulateServoFeeding(targetPortion);
 
@@ -214,54 +258,56 @@
         </div>`;
     }
 
-    alertDiv.innerHTML = message;
+    if (alertDiv) alertDiv.innerHTML = message;
     updateAllDisplays();
 
-    btn.disabled = false;
-    btn.innerHTML = '🍽️ Cho ăn ngay';
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '🍽️ Cho ăn ngay';
+    }
 
-    // cập nhật status sau khi feed
     refreshFromESP();
   }
 
   // =======================
-  // UI update functions
+  // UI update
   // =======================
   function updateAllDisplays() {
     const foodPercent = Math.round((systemData.currentFood / CONFIG.totalCapacity) * 100);
 
-    document.getElementById('foodDisplay').textContent = systemData.currentFood + 'g';
-    document.getElementById('foodPercent').textContent = foodPercent + '%';
-    document.getElementById('foodProgress').style.width = foodPercent + '%';
-    document.getElementById('totalCapacity').textContent = CONFIG.totalCapacity + 'g';
+    setText('foodDisplay', systemData.currentFood + 'g');
+    setText('foodPercent', foodPercent + '%');
+    setWidth('foodProgress', foodPercent + '%');
+    setText('totalCapacity', CONFIG.totalCapacity + 'g');
 
     const todayCount = systemData.todayFeedings.length;
-    const todayTotal = systemData.todayFeedings.reduce((sum, f) => sum + f.actualAmount, 0);
-    const totalServo = systemData.todayFeedings.reduce((sum, f) => sum + f.servoRotations, 0);
-    const totalReductions = systemData.todayFeedings.reduce((sum, f) => sum + f.foodReductions, 0);
+    const todayTotal = systemData.todayFeedings.reduce((sum, f) => sum + (f.actualAmount || 0), 0);
+    const totalServo = systemData.todayFeedings.reduce((sum, f) => sum + (f.servoRotations || 0), 0);
+    const totalReductions = systemData.todayFeedings.reduce((sum, f) => sum + (f.foodReductions || 0), 0);
 
-    document.getElementById('todayFeeds').textContent = todayCount;
-    document.getElementById('todayTotal').textContent = todayTotal + 'g';
-    document.getElementById('servoCount').textContent = totalServo;
+    setText('todayFeeds', String(todayCount));
+    setText('todayTotal', todayTotal + 'g');
+    setText('servoCount', String(totalServo));
 
-    document.getElementById('statTodayCount').textContent = todayCount;
-    document.getElementById('statTodayAmount').textContent = todayTotal + 'g';
-    document.getElementById('statServoRotations').textContent = totalServo;
-    document.getElementById('statFoodReductions').textContent = totalReductions;
+    setText('statTodayCount', String(todayCount));
+    setText('statTodayAmount', todayTotal + 'g');
+    setText('statServoRotations', String(totalServo));
+    setText('statFoodReductions', String(totalReductions));
 
     const avgServo = todayCount > 0 ? Math.round((totalServo / todayCount) * 10) / 10 : 0;
     const avgFoodPerServo = totalServo > 0 ? Math.round((todayTotal / totalServo) * 10) / 10 : 0;
 
-    document.getElementById('avgServoPerFeed').textContent = avgServo;
-    document.getElementById('totalServoToday').textContent = totalServo;
-    document.getElementById('avgFoodPerServo').textContent = avgFoodPerServo + 'g';
+    setText('avgServoPerFeed', String(avgServo));
+    setText('totalServoToday', String(totalServo));
+    setText('avgFoodPerServo', avgFoodPerServo + 'g');
 
     updateFeedingHistory();
     updateUptime();
   }
 
   function updateFeedingHistory() {
-    const historyDiv = document.getElementById('feedingHistory');
+    const historyDiv = $('feedingHistory');
+    if (!historyDiv) return;
 
     if (systemData.todayFeedings.length === 0) {
       historyDiv.innerHTML = `
@@ -285,7 +331,10 @@
         <div style="text-align: right;">
           <div class="history-amount">
             ${feed.actualAmount}g
-            ${feed.error !== 0 ? `<span style="font-size: 0.85rem; color: var(--text-mid);">(${feed.error > 0 ? '+' : ''}${feed.error}g)</span>` : ''}
+            ${feed.error !== 0
+              ? `<span style="font-size: 0.85rem; color: var(--text-mid);">(${feed.error > 0 ? '+' : ''}${feed.error}g)</span>`
+              : ''
+            }
           </div>
           <div style="font-size: 0.85rem; color: var(--text-mid);">
             Mục tiêu: ${feed.targetPortion}g
@@ -296,27 +345,29 @@
   }
 
   function updateUptime() {
+    const el = $('uptime');
+    if (!el) return;
+
     const uptime = Date.now() - systemData.connectionStats.startTime;
     const hours = Math.floor(uptime / 3600000);
     const minutes = Math.floor((uptime % 3600000) / 60000);
-    document.getElementById('uptime').textContent = `${hours}h ${minutes}m`;
+    el.textContent = `${hours}h ${minutes}m`;
   }
 
   // =======================
-  // Navigation (fix lỗi event)
+  // Navigation
   // =======================
   function showPage(pageName) {
     document.querySelectorAll('.page-section').forEach(section => section.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
 
-    document.getElementById(pageName + '-page').classList.add('active');
+    const page = $(pageName + '-page');
+    if (page) page.classList.add('active');
 
-    // FIX: không dùng biến event ngầm định (hay lỗi trên một số trình duyệt)
     const btns = document.querySelectorAll('.nav-btn');
     btns.forEach(b => {
-      if (b.getAttribute('onclick') && b.getAttribute('onclick').includes(`showPage('${pageName}')`)) {
-        b.classList.add('active');
-      }
+      const oc = b.getAttribute('onclick') || '';
+      if (oc.includes(`showPage('${pageName}')`)) b.classList.add('active');
     });
 
     if (pageName === 'statistics') updateAllDisplays();
@@ -326,16 +377,27 @@
   // Schedule Modal
   // =======================
   function openScheduleModal() {
-    document.getElementById('scheduleModal').classList.add('active');
+    const m = $('scheduleModal');
+    if (m) m.classList.add('active');
   }
 
   function closeScheduleModal() {
-    document.getElementById('scheduleModal').classList.remove('active');
+    const m = $('scheduleModal');
+    if (m) m.classList.remove('active');
   }
 
   function saveSchedule() {
-    const time = document.getElementById('scheduleTime').value;
-    const portion = parseInt(document.getElementById('schedulePortion').value);
+    const timeEl = $('scheduleTime');
+    const portionEl = $('schedulePortion');
+    if (!timeEl || !portionEl) return;
+
+    const time = timeEl.value;
+    const portion = parseInt(portionEl.value, 10);
+
+    if (!time || !Number.isFinite(portion) || portion <= 0) {
+      alert('⚠️ Thời gian/khẩu phần không hợp lệ');
+      return;
+    }
 
     systemData.schedules.push({ id: Date.now(), time, portion });
     saveData();
@@ -345,7 +407,8 @@
   }
 
   function renderSchedules() {
-    const listDiv = document.getElementById('scheduleList');
+    const listDiv = $('scheduleList');
+    if (!listDiv) return;
 
     if (systemData.schedules.length === 0) {
       listDiv.innerHTML = `
@@ -379,16 +442,35 @@
   }
 
   // =======================
-  // Init
+  // Init (không làm chết UI)
   // =======================
   window.addEventListener('load', () => {
+    // Slider setup an toàn
+    const portionSlider = $('portionSlider');
+    const portionDisplay = $('portionDisplay');
+    if (portionSlider && portionDisplay) {
+      portionDisplay.textContent = portionSlider.value + 'g';
+      portionSlider.addEventListener('input', function () {
+        portionDisplay.textContent = this.value + 'g';
+      });
+    }
+
     loadData();
     renderSchedules();
-    refreshFromESP(); // gọi status ngay khi mở
+    refreshFromESP();
 
-    setInterval(() => {
-      updateUptime();
-      refreshFromESP();
-    }, 1000);
+    // uptime 1s, status 3s (đỡ nghẽn ESP32)
+    setInterval(updateUptime, 1000);
+    setInterval(refreshFromESP, 3000);
   });
+
+  // =======================
+  // Export để dùng trong onclick HTML
+  // =======================
+  window.feedNow = feedNow;
+  window.showPage = showPage;
+  window.openScheduleModal = openScheduleModal;
+  window.closeScheduleModal = closeScheduleModal;
+  window.saveSchedule = saveSchedule;
+  window.deleteSchedule = deleteSchedule;
 </script>
