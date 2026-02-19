@@ -1,1170 +1,532 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PetFeeder Smart Control</title>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #D4A574;
-            --primary-dark: #B8865A;
-            --secondary: #8B9D77;
-            --accent: #E8B4A8;
-            --bg-cream: #FAF8F3;
-            --bg-light: #FFF9F0;
-            --text-dark: #2C2416;
-            --text-mid: #5C5242;
-            --text-light: #8A7F6F;
-            --success: #a8e6cf;
-            --error: #ffb3ba;
-            --warning: #ffd93d;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Manrope', sans-serif;
-            background: var(--bg-cream);
-            color: var(--text-dark);
-            line-height: 1.6;
-        }
-
-        .bg-decoration {
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            z-index: 0;
-            pointer-events: none;
-            overflow: hidden;
-        }
-
-        .bg-blob {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(80px);
-            opacity: 0.15;
-            animation: float 20s ease-in-out infinite;
-        }
-
-        .bg-blob-1 {
-            width: 400px;
-            height: 400px;
-            background: var(--primary);
-            top: -100px;
-            right: -100px;
-        }
-
-        .bg-blob-2 {
-            width: 500px;
-            height: 500px;
-            background: var(--secondary);
-            bottom: -150px;
-            left: -150px;
-            animation-delay: 5s;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0); }
-            33% { transform: translate(30px, -30px); }
-            66% { transform: translate(-20px, 20px); }
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 40px 20px;
-            position: relative;
-            z-index: 1;
-        }
-
-        nav {
-            background: var(--bg-light);
-            border-radius: 20px;
-            padding: 16px 24px;
-            margin-bottom: 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-        }
-
-        .nav-brand {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.5rem;
-            font-weight: 900;
-            color: var(--primary-dark);
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 8px;
-        }
-
-        .nav-btn {
-            padding: 10px 20px;
-            border: none;
-            background: transparent;
-            color: var(--text-mid);
-            font-weight: 600;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .nav-btn:hover {
-            background: var(--bg-cream);
-            color: var(--primary-dark);
-        }
-
-        .nav-btn.active {
-            background: var(--primary);
-            color: white;
-        }
-
-        .page-section {
-            display: none;
-        }
-
-        .page-section.active {
-            display: block;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 60px;
-        }
-
-        h1 {
-            font-family: 'Playfair Display', serif;
-            font-size: clamp(2.5rem, 6vw, 4.5rem);
-            font-weight: 900;
-            color: var(--text-dark);
-            margin-bottom: 12px;
-        }
-
-        .subtitle {
-            font-size: 1.1rem;
-            color: var(--text-mid);
-            font-weight: 500;
-        }
-
-        .dashboard {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 24px;
-            margin-bottom: 40px;
-        }
-
-        .card {
-            background: var(--bg-light);
-            border-radius: 24px;
-            padding: 32px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 16px 48px rgba(0,0,0,0.12);
-        }
-
-        .card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-
-        .card-title {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--text-dark);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .card-icon {
-            font-size: 2rem;
-        }
-
-        .status-badge {
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .status-online {
-            background: var(--success);
-            color: #1a5d3a;
-        }
-
-        .status-offline {
-            background: var(--error);
-            color: #8b0000;
-        }
-
-        .stat-value {
-            font-family: 'Playfair Display', serif;
-            font-size: 3.5rem;
-            font-weight: 900;
-            color: var(--primary-dark);
-            line-height: 1;
-            margin: 16px 0;
-        }
-
-        .stat-label {
-            font-size: 0.95rem;
-            color: var(--text-light);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 600;
-        }
-
-        .progress-container {
-            margin: 24px 0;
-        }
-
-        .progress-bar {
-            height: 20px;
-            background: rgba(0,0,0,0.05);
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary), var(--accent));
-            border-radius: 12px;
-            transition: width 1s ease;
-        }
-
-        .progress-label {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 8px;
-            font-size: 0.9rem;
-            color: var(--text-mid);
-            font-weight: 600;
-        }
-
-        .btn {
-            padding: 16px 32px;
-            border: none;
-            border-radius: 16px;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
-            box-shadow: 0 8px 24px rgba(212, 165, 116, 0.3);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 32px rgba(212, 165, 116, 0.4);
-        }
-
-        .btn-primary:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .btn-large {
-            width: 100%;
-            padding: 24px;
-            font-size: 1.2rem;
-        }
-
-        .feed-control {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            border-radius: 32px;
-            padding: 48px;
-            text-align: center;
-            box-shadow: 0 16px 48px rgba(0,0,0,0.12);
-            margin-bottom: 40px;
-        }
-
-        .feed-control h2 {
-            font-family: 'Playfair Display', serif;
-            font-size: 2.5rem;
-            color: white;
-            margin-bottom: 16px;
-        }
-
-        .feed-control p {
-            color: rgba(255,255,255,0.9);
-            font-size: 1.1rem;
-            margin-bottom: 32px;
-        }
-
-        .slider-control {
-            margin: 32px 0;
-        }
-
-        .slider-label {
-            display: flex;
-            justify-content: space-between;
-            color: rgba(255,255,255,0.9);
-            font-weight: 600;
-            margin-bottom: 12px;
-        }
-
-        input[type="range"] {
-            width: 100%;
-            height: 12px;
-            border-radius: 6px;
-            background: rgba(255,255,255,0.3);
-            outline: none;
-            -webkit-appearance: none;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: white;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-
-        .alert {
-            padding: 16px 20px;
-            border-radius: 12px;
-            margin: 16px 0;
-            font-weight: 600;
-        }
-
-        .alert-warning {
-            background: var(--warning);
-            color: #8b6914;
-        }
-
-        .alert-error {
-            background: var(--error);
-            color: #8b0000;
-        }
-
-        .alert-success {
-            background: var(--success);
-            color: #1a5d3a;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 16px;
-            margin-top: 20px;
-        }
-
-        .stat-box {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-
-        .stat-box:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-        }
-
-        .stat-box-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary-dark);
-        }
-
-        .stat-box-label {
-            font-size: 0.85rem;
-            color: var(--text-mid);
-            margin-top: 4px;
-        }
-
-        .history-item {
-            background: white;
-            padding: 16px 20px;
-            border-radius: 12px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.3s ease;
-        }
-
-        .history-item:hover {
-            transform: translateX(8px);
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-        }
-
-        .history-time {
-            font-weight: 700;
-            color: var(--primary-dark);
-        }
-
-        .history-amount {
-            font-weight: 600;
-            color: var(--secondary);
-        }
-
-        .history-servo {
-            font-size: 0.85rem;
-            color: var(--text-mid);
-            margin-top: 4px;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.6);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: var(--bg-light);
-            border-radius: 32px;
-            padding: 40px;
-            max-width: 600px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-            position: relative;
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: none;
-            background: var(--accent);
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-        }
-
-        .form-group {
-            margin-bottom: 24px;
-        }
-
-        .form-label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 14px 16px;
-            border: 2px solid var(--bg-cream);
-            border-radius: 12px;
-            font-size: 1rem;
-            font-family: 'Manrope', sans-serif;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        .schedule-list {
-            margin-top: 24px;
-        }
-
-        .schedule-item {
-            background: white;
-            padding: 20px;
-            border-radius: 16px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .schedule-time {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--primary-dark);
-        }
-
-        .schedule-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .icon-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            border: none;
-            cursor: pointer;
-            font-size: 1.2rem;
-            transition: all 0.3s ease;
-        }
-
-        .icon-btn:hover {
-            transform: scale(1.1);
-        }
-
-        .icon-btn-edit {
-            background: var(--secondary);
-            color: white;
-        }
-
-        .icon-btn-delete {
-            background: var(--accent);
-            color: white;
-        }
-
-        @media (max-width: 768px) {
-            .container { padding: 20px 16px; }
-            h1 { font-size: 2.5rem; }
-            .dashboard { grid-template-columns: 1fr; }
-            .feed-control { padding: 32px 24px; }
-        }
-    </style>
-</head>
-<body>
-    <div class="bg-decoration">
-        <div class="bg-blob bg-blob-1"></div>
-        <div class="bg-blob bg-blob-2"></div>
-    </div>
-
-    <div class="container">
-        <nav>
-            <div class="nav-brand">🐾 PetFeeder Smart</div>
-            <div class="nav-links">
-                <!-- CHỈ SỬA onclick thêm this -->
-                <button class="nav-btn active" onclick="showPage('dashboard', this)">Dashboard</button>
-                <button class="nav-btn" onclick="showPage('schedules', this)">Lịch trình</button>
-                <button class="nav-btn" onclick="showPage('statistics', this)">Thống kê</button>
-            </div>
-        </nav>
-
-        <!-- DASHBOARD PAGE -->
-        <div id="dashboard-page" class="page-section active">
-            <header>
-                <h1>Dashboard</h1>
-                <p class="subtitle">Quản lý thông minh cho thú cưng của bạn</p>
-            </header>
-
-            <div class="dashboard">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <span class="card-icon">📡</span>
-                            Kết nối
-                        </h3>
-                        <span class="status-badge status-online" id="statusBadge">Online</span>
-                    </div>
-                    <div>
-                        <p style="color: var(--text-mid); margin: 8px 0;">
-                            <strong>Độ trễ:</strong> <span id="pingTime">28</span>ms
-                        </p>
-                        <p style="color: var(--text-mid); margin: 8px 0;">
-                            <strong>Cập nhật:</strong> <span id="lastUpdate">Vừa xong</span>
-                        </p>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <span class="card-icon">🍖</span>
-                            Thức ăn
-                        </h3>
-                    </div>
-                    <div class="stat-value" id="foodDisplay">1000g</div>
-                    <p class="stat-label">Còn lại trong máy</p>
-                    <div class="progress-container">
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="foodProgress" style="width: 100%"></div>
-                        </div>
-                        <div class="progress-label">
-                            <span id="foodPercent">100%</span>
-                            <span>Tổng: <span id="totalCapacity">1000g</span></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <span class="card-icon">⏰</span>
-                            Hôm nay
-                        </h3>
-                    </div>
-                    <div class="stat-value"><span id="todayFeeds">0</span> lần</div>
-                    <p class="stat-label">Số lần cho ăn</p>
-                    <hr style="margin: 20px 0; border: none; border-top: 1px solid rgba(0,0,0,0.08);">
-                    <p style="color: var(--text-mid);">
-                        <strong>Tổng đã cho:</strong> <span id="todayTotal">0g</span>
-                    </p>
-                    <p style="color: var(--text-mid); margin-top: 8px;">
-                        <strong>Servo quay:</strong> <span id="servoCount">0</span> lần
-                    </p>
-                </div>
-            </div>
-
-            <div class="feed-control">
-                <h2>Cho ăn ngay</h2>
-                <p>Điều chỉnh khẩu phần và cho thú cưng ăn ngay lập tức</p>
-
-                <div class="slider-control">
-                    <div class="slider-label">
-                        <span>Khẩu phần mục tiêu</span>
-                        <span id="portionDisplay">200g</span>
-                    </div>
-                    <input type="range" id="portionSlider" min="50" max="300" value="200" step="10">
-                    <p style="color: rgba(255,255,255,0.8); font-size: 0.9rem; margin-top: 12px;">
-                        💡 Hệ thống sẽ tự động điều chỉnh nếu sai số vượt quá 50g
-                    </p>
-                </div>
-
-                <button class="btn btn-primary btn-large" id="feedNowBtn" onclick="feedNow()">
-                    🍽️ Cho ăn ngay
-                </button>
-
-                <div id="feedAlert"></div>
-            </div>
+<script>
+  // ==========================================================
+  // PetFeeder UI Script (Safe + ESP32-friendly + no-blank-page)
+  // ==========================================================
+
+  // =======================
+  // CONFIG
+  // =======================
+  const CONFIG = {
+    totalCapacity: 1000,
+    errorThreshold: 50,
+    gramsPerServoRotation: 10,
+    statusPollMs: 3000,   // polling status 3s để ESP32 không nghẽn
+    uptimeTickMs: 1000,   // uptime 1s
+    fetchTimeoutMs: 2500, // timeout status
+    feedTimeoutMs: 4500,  // timeout feed
+    defaultPage: 'dashboard' // đổi nếu page mặc định bạn khác
+  };
+
+  let systemData = {
+    currentFood: CONFIG.totalCapacity,
+    todayFeedings: [],
+    schedules: [],
+    connectionStats: {
+      lastPing: 0,
+      startTime: Date.now()
+    }
+  };
+
+  // =======================
+  // DOM SAFE HELPERS
+  // =======================
+  const $ = (id) => document.getElementById(id);
+
+  function safeText(id, value) {
+    const el = $(id);
+    if (el) el.textContent = value;
+  }
+
+  function safeHTML(id, html) {
+    const el = $(id);
+    if (el) el.innerHTML = html;
+  }
+
+  function safeWidth(id, w) {
+    const el = $(id);
+    if (el) el.style.width = w;
+  }
+
+  // =======================
+  // FETCH with TIMEOUT
+  // =======================
+  async function fetchWithTimeout(url, options = {}, timeoutMs = 2500) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+
+    try {
+      const res = await fetch(url, {
+        ...options,
+        signal: ctrl.signal,
+        cache: 'no-store'
+      });
+      return res;
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
+  // =======================
+  // LocalStorage
+  // =======================
+  function loadData() {
+    const saved = localStorage.getItem('petfeeder_data');
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        const today = new Date().toDateString();
+
+        if (data.lastDate !== today) {
+          systemData.todayFeedings = [];
+          systemData.currentFood = CONFIG.totalCapacity;
+          systemData.schedules = data.schedules ?? [];
+        } else {
+          systemData.currentFood = data.currentFood ?? CONFIG.totalCapacity;
+          systemData.todayFeedings = data.todayFeedings ?? [];
+          systemData.schedules = data.schedules ?? [];
+        }
+      } catch (e) {
+        console.error('Error loading data:', e);
+      }
+    }
+    updateAllDisplays();
+  }
+
+  function saveData() {
+    const dataToSave = {
+      currentFood: systemData.currentFood,
+      todayFeedings: systemData.todayFeedings,
+      schedules: systemData.schedules,
+      lastDate: new Date().toDateString()
+    };
+    localStorage.setItem('petfeeder_data', JSON.stringify(dataToSave));
+  }
+
+  // =======================
+  // ESP32 API
+  // =======================
+  async function apiStatus() {
+    const t0 = performance.now();
+    const r = await fetchWithTimeout('/api/status', {}, CONFIG.fetchTimeoutMs);
+    const t1 = performance.now();
+
+    if (!r.ok) throw new Error('status_http_' + r.status);
+
+    const j = await r.json();
+    systemData.connectionStats.lastPing = Math.round(t1 - t0);
+    return j;
+  }
+
+  async function apiFeed() {
+    const r = await fetchWithTimeout('/api/feed', { method: 'POST' }, CONFIG.feedTimeoutMs);
+    if (!r.ok) throw new Error('feed_http_' + r.status);
+    return await r.json();
+  }
+
+  function setOnlineUI(isOnline) {
+    const badge = $('statusBadge');
+    if (!badge) return;
+
+    if (isOnline) {
+      badge.textContent = 'Online';
+      badge.classList.remove('status-offline');
+      badge.classList.add('status-online');
+    } else {
+      badge.textContent = 'Offline';
+      badge.classList.remove('status-online');
+      badge.classList.add('status-offline');
+    }
+  }
+
+  async function refreshFromESP() {
+    try {
+      const st = await apiStatus();
+      setOnlineUI(true);
+
+      safeText('pingTime', String(systemData.connectionStats.lastPing));
+      safeText('lastUpdate', st.time || '---');
+    } catch (e) {
+      setOnlineUI(false);
+      // im lặng để không làm chết timer
+    }
+  }
+
+  // =======================
+  // Simulation (UI only)
+  // =======================
+  function simulateServoFeeding(targetPortion) {
+    let actualAmount = 0;
+    let servoRotations = 0;
+    let foodReductions = 0;
+
+    while (actualAmount < targetPortion) {
+      servoRotations++;
+      const foodReleased = CONFIG.gramsPerServoRotation + (Math.random() * 4 - 2);
+      actualAmount += foodReleased;
+      foodReductions++;
+
+      const error = actualAmount - targetPortion;
+
+      if (error < 0) continue;
+      if (error >= CONFIG.errorThreshold) break;
+      if (Math.abs(error) < CONFIG.errorThreshold) break;
+    }
+
+    return {
+      actualAmount: Math.round(actualAmount),
+      servoRotations,
+      foodReductions,
+      error: Math.round(actualAmount - targetPortion)
+    };
+  }
+
+  // =======================
+  // FEED NOW
+  // =======================
+  async function feedNow() {
+    const btn = $('feedNowBtn');
+    const alertDiv = $('feedAlert');
+    const slider = $('portionSlider');
+
+    if (!slider) {
+      if (alertDiv) alertDiv.innerHTML = `<div class="alert alert-error">❌ Thiếu #portionSlider trong HTML</div>`;
+      return;
+    }
+
+    const targetPortion = parseInt(slider.value, 10);
+    if (!Number.isFinite(targetPortion) || targetPortion <= 0) {
+      if (alertDiv) alertDiv.innerHTML = `<div class="alert alert-warning">⚠️ Khẩu phần không hợp lệ</div>`;
+      return;
+    }
+
+    // check tồn kho UI
+    if (systemData.currentFood < targetPortion) {
+      if (alertDiv) {
+        alertDiv.innerHTML = `
+          <div class="alert alert-error">
+            ⚠️ Không đủ thức ăn! Còn lại ${systemData.currentFood}g, cần ${targetPortion}g
+          </div>`;
+      }
+      return;
+    }
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Đang cho ăn...';
+    }
+    if (alertDiv) alertDiv.innerHTML = '';
+
+    // 1) gọi ESP32 thật
+    try {
+      const j = await apiFeed();
+      if (!j || j.ok !== true) {
+        if (alertDiv) alertDiv.innerHTML =
+          `<div class="alert alert-warning">⚠️ ESP32 bận: ${(j && j.err) ? j.err : 'busy'}</div>`;
+        if (btn) { btn.disabled = false; btn.innerHTML = '🍽️ Cho ăn ngay'; }
+        return;
+      }
+    } catch (e) {
+      if (alertDiv) alertDiv.innerHTML = `<div class="alert alert-error">❌ Không kết nối được ESP32</div>`;
+      if (btn) { btn.disabled = false; btn.innerHTML = '🍽️ Cho ăn ngay'; }
+      setOnlineUI(false);
+      return;
+    }
+
+    // 2) mô phỏng UI để thống kê
+    await new Promise(r => setTimeout(r, 600));
+    const result = simulateServoFeeding(targetPortion);
+
+    systemData.currentFood -= result.actualAmount;
+    if (systemData.currentFood < 0) systemData.currentFood = 0;
+
+    const feedingRecord = {
+      time: new Date().toLocaleTimeString('vi-VN'),
+      timestamp: Date.now(),
+      targetPortion,
+      actualAmount: result.actualAmount,
+      servoRotations: result.servoRotations,
+      foodReductions: result.foodReductions,
+      error: result.error,
+      remainingFood: systemData.currentFood
+    };
+
+    systemData.todayFeedings.push(feedingRecord);
+    saveData();
+
+    let message = `
+      <div class="alert alert-success">
+        ✅ Đã gửi lệnh cho ESP32 và hoàn tất!<br>
+        🎯 Mục tiêu: ${targetPortion}g | UI ước lượng: ${result.actualAmount}g<br>
+        🔧 Servo quay (ước lượng): ${result.servoRotations} lần<br>
+        ${Math.abs(result.error) > 0 ? `📊 Sai số ước lượng: ${result.error > 0 ? '+' : ''}${result.error}g` : ''}
+      </div>`;
+
+    if (Math.abs(result.error) >= CONFIG.errorThreshold) {
+      message = `
+        <div class="alert alert-warning">
+          ⚠️ Đã cho ăn (ESP32) nhưng UI ước lượng sai số lớn!<br>
+          🎯 Mục tiêu: ${targetPortion}g | UI ước lượng: ${result.actualAmount}g<br>
+          📊 Sai số ước lượng: ${result.error > 0 ? '+' : ''}${result.error}g (≥ ${CONFIG.errorThreshold}g)
+        </div>`;
+    }
+
+    if (alertDiv) alertDiv.innerHTML = message;
+
+    updateAllDisplays();
+
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '🍽️ Cho ăn ngay';
+    }
+
+    refreshFromESP();
+  }
+
+  // =======================
+  // UI UPDATES
+  // =======================
+  function updateAllDisplays() {
+    const foodPercent = Math.round((systemData.currentFood / CONFIG.totalCapacity) * 100);
+
+    safeText('foodDisplay', systemData.currentFood + 'g');
+    safeText('foodPercent', foodPercent + '%');
+    safeWidth('foodProgress', foodPercent + '%');
+    safeText('totalCapacity', CONFIG.totalCapacity + 'g');
+
+    const todayCount = systemData.todayFeedings.length;
+    const todayTotal = systemData.todayFeedings.reduce((sum, f) => sum + (f.actualAmount || 0), 0);
+    const totalServo = systemData.todayFeedings.reduce((sum, f) => sum + (f.servoRotations || 0), 0);
+    const totalReductions = systemData.todayFeedings.reduce((sum, f) => sum + (f.foodReductions || 0), 0);
+
+    safeText('todayFeeds', String(todayCount));
+    safeText('todayTotal', todayTotal + 'g');
+    safeText('servoCount', String(totalServo));
+
+    safeText('statTodayCount', String(todayCount));
+    safeText('statTodayAmount', todayTotal + 'g');
+    safeText('statServoRotations', String(totalServo));
+    safeText('statFoodReductions', String(totalReductions));
+
+    const avgServo = todayCount > 0 ? Math.round((totalServo / todayCount) * 10) / 10 : 0;
+    const avgFoodPerServo = totalServo > 0 ? Math.round((todayTotal / totalServo) * 10) / 10 : 0;
+
+    safeText('avgServoPerFeed', String(avgServo));
+    safeText('totalServoToday', String(totalServo));
+    safeText('avgFoodPerServo', avgFoodPerServo + 'g');
+
+    updateFeedingHistory();
+    updateUptime();
+  }
+
+  function updateFeedingHistory() {
+    const historyDiv = $('feedingHistory');
+    if (!historyDiv) return;
+
+    if (systemData.todayFeedings.length === 0) {
+      historyDiv.innerHTML = `
+        <p style="text-align: center; color: var(--text-mid); padding: 20px;">
+          Chưa có dữ liệu hôm nay
+        </p>`;
+      return;
+    }
+
+    const sorted = [...systemData.todayFeedings].reverse();
+
+    historyDiv.innerHTML = sorted.map(feed => `
+      <div class="history-item">
+        <div>
+          <div class="history-time">🕐 ${feed.time}</div>
+          <div class="history-servo">
+            🔧 Servo: ${feed.servoRotations} lần |
+            📉 Giảm: ${feed.foodReductions} lần
+          </div>
         </div>
-
-        <!-- SCHEDULES PAGE -->
-        <div id="schedules-page" class="page-section">
-            <header>
-                <h1>Lịch trình cho ăn</h1>
-                <p class="subtitle">Thiết lập lịch cho ăn tự động theo ý bạn</p>
-            </header>
-
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <span class="card-icon">📅</span>
-                        Danh sách lịch
-                    </h3>
-                    <button class="btn btn-primary" style="padding: 8px 20px; font-size: 0.9rem;" onclick="openScheduleModal()">
-                        ➕ Thêm lịch mới
-                    </button>
-                </div>
-
-                <div class="schedule-list" id="scheduleList">
-                    <p style="text-align: center; color: var(--text-mid); padding: 20px;">
-                        Chưa có lịch nào. Nhấn "Thêm lịch mới" để tạo.
-                    </p>
-                </div>
-            </div>
+        <div style="text-align: right;">
+          <div class="history-amount">
+            ${feed.actualAmount}g
+            ${feed.error !== 0
+              ? `<span style="font-size: 0.85rem; color: var(--text-mid);">(${feed.error > 0 ? '+' : ''}${feed.error}g)</span>`
+              : ''
+            }
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-mid);">
+            Mục tiêu: ${feed.targetPortion}g
+          </div>
         </div>
+      </div>
+    `).join('');
+  }
 
-        <!-- STATISTICS PAGE -->
-        <div id="statistics-page" class="page-section">
-            <header>
-                <h1>Thống kê chi tiết</h1>
-                <p class="subtitle">Theo dõi hoạt động cho ăn và hoạt động servo</p>
-            </header>
+  function updateUptime() {
+    const el = $('uptime');
+    if (!el) return;
 
-            <div class="card">
-                <h3 class="card-title">
-                    <span class="card-icon">📊</span>
-                    Tổng quan hôm nay
-                </h3>
+    const uptime = Date.now() - systemData.connectionStats.startTime;
+    const hours = Math.floor(uptime / 3600000);
+    const minutes = Math.floor((uptime % 3600000) / 60000);
+    el.textContent = `${hours}h ${minutes}m`;
+  }
 
-                <div class="stats-grid">
-                    <div class="stat-box">
-                        <div class="stat-box-value" id="statTodayCount">0</div>
-                        <div class="stat-box-label">Số lần cho ăn</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-box-value" id="statTodayAmount">0g</div>
-                        <div class="stat-box-label">Tổng lượng thức ăn</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-box-value" id="statServoRotations">0</div>
-                        <div class="stat-box-label">Số lần servo quay</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-box-value" id="statFoodReductions">0</div>
-                        <div class="stat-box-label">Lần thức ăn giảm</div>
-                    </div>
-                </div>
-            </div>
+  // =======================
+  // NAVIGATION (no blank page)
+  // =======================
+  function showPage(pageName) {
+    // ẩn tất cả
+    document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
-            <div class="card" style="margin-top: 24px;">
-                <h3 class="card-title" style="margin-bottom: 20px;">
-                    <span class="card-icon">📝</span>
-                    Chi tiết từng lần cho ăn
-                </h3>
-                <div id="feedingHistory">
-                    <p style="text-align: center; color: var(--text-mid); padding: 20px;">
-                        Chưa có dữ liệu hôm nay
-                    </p>
-                </div>
-            </div>
+    // hiện page được yêu cầu
+    const page = $(pageName + '-page');
+    if (page) page.classList.add('active');
 
-            <div class="card" style="margin-top: 24px;">
-                <h3 class="card-title">
-                    <span class="card-icon">🔧</span>
-                    Hoạt động Servo Motor
-                </h3>
-                <div class="stats-grid">
-                    <div class="stat-box">
-                        <div class="stat-box-value" id="avgServoPerFeed">0</div>
-                        <div class="stat-box-label">Trung bình/lần cho ăn</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-box-value" id="totalServoToday">0</div>
-                        <div class="stat-box-label">Tổng lần quay hôm nay</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-box-value" id="avgFoodPerServo">0g</div>
-                        <div class="stat-box-label">Thức ăn/lần quay</div>
-                    </div>
-                </div>
-            </div>
+    // active nút nav (nếu vẫn dùng onclick trong HTML)
+    document.querySelectorAll('.nav-btn').forEach(b => {
+      const oc = b.getAttribute('onclick') || '';
+      if (oc.includes(`showPage('${pageName}')`)) b.classList.add('active');
+    });
 
-            <div class="card" style="margin-top: 24px;">
-                <h3 class="card-title">
-                    <span class="card-icon">🔗</span>
-                    Chất lượng kết nối
-                </h3>
-                <div class="stats-grid">
-                    <div class="stat-box">
-                        <div class="stat-box-value" id="avgPing">28ms</div>
-                        <div class="stat-box-label">Ping trung bình</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-box-value" id="successRate">100%</div>
-                        <div class="stat-box-label">Tỷ lệ thành công</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-box-value" id="uptime">--</div>
-                        <div class="stat-box-label">Thời gian hoạt động</div>
-                    </div>
-                </div>
-            </div>
+    // nếu là statistics thì refresh
+    if (pageName === 'statistics') updateAllDisplays();
+  }
+
+  // fallback: bật page đầu tiên nếu pageName sai
+  function ensureVisiblePage() {
+    const anyActive = document.querySelector('.page-section.active');
+    if (anyActive) return true;
+
+    // thử bật defaultPage
+    const def = $(CONFIG.defaultPage + '-page');
+    if (def) {
+      def.classList.add('active');
+      return true;
+    }
+
+    // bật section đầu tiên
+    const first = document.querySelector('.page-section');
+    if (first) {
+      first.classList.add('active');
+      return true;
+    }
+    return false;
+  }
+
+  // =======================
+  // SCHEDULE MODAL
+  // =======================
+  function openScheduleModal() {
+    const m = $('scheduleModal');
+    if (m) m.classList.add('active');
+  }
+
+  function closeScheduleModal() {
+    const m = $('scheduleModal');
+    if (m) m.classList.remove('active');
+  }
+
+  function saveSchedule() {
+    const timeEl = $('scheduleTime');
+    const portionEl = $('schedulePortion');
+    if (!timeEl || !portionEl) return;
+
+    const time = timeEl.value;
+    const portion = parseInt(portionEl.value, 10);
+
+    if (!time || !Number.isFinite(portion) || portion <= 0) {
+      alert('⚠️ Thời gian/khẩu phần không hợp lệ');
+      return;
+    }
+
+    systemData.schedules.push({ id: Date.now(), time, portion });
+    saveData();
+    renderSchedules();
+    closeScheduleModal();
+    alert('✅ Đã thêm lịch cho ăn lúc ' + time + ' với khẩu phần ' + portion + 'g');
+  }
+
+  function renderSchedules() {
+    const listDiv = $('scheduleList');
+    if (!listDiv) return;
+
+    if (systemData.schedules.length === 0) {
+      listDiv.innerHTML = `
+        <p style="text-align: center; color: var(--text-mid); padding: 20px;">
+          Chưa có lịch nào. Nhấn "Thêm lịch mới" để tạo.
+        </p>`;
+      return;
+    }
+
+    listDiv.innerHTML = systemData.schedules.map(s => `
+      <div class="schedule-item">
+        <div>
+          <div class="schedule-time">${s.time}</div>
+          <div style="color: var(--text-mid); font-size: 0.9rem; margin-top: 4px;">
+            Khẩu phần: ${s.portion}g
+          </div>
         </div>
-    </div>
-
-    <!-- Schedule Modal -->
-    <div id="scheduleModal" class="modal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closeScheduleModal()">×</button>
-            <h2>Thêm lịch cho ăn</h2>
-
-            <div class="form-group">
-                <label class="form-label">Thời gian</label>
-                <input type="time" class="form-input" id="scheduleTime" value="08:00">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Khẩu phần mục tiêu (gram)</label>
-                <input type="number" class="form-input" id="schedulePortion" value="200" min="50" max="300" step="10">
-                <p style="color: var(--text-mid); font-size: 0.85rem; margin-top: 4px;">
-                    Hệ thống sẽ tự điều chỉnh nếu sai số > 50g
-                </p>
-            </div>
-
-            <div style="margin-top: 32px;">
-                <button class="btn btn-primary" style="width: 100%;" onclick="saveSchedule()">💾 Lưu lịch</button>
-            </div>
+        <div class="schedule-actions">
+          <button class="icon-btn icon-btn-delete" onclick="deleteSchedule(${s.id})">🗑️</button>
         </div>
-    </div>
+      </div>
+    `).join('');
+  }
 
-    <script>
-        // Cấu hình hệ thống
-        const CONFIG = {
-            totalCapacity: 1000,     // Tổng dung tích máy (gram)
-            targetPortion: 200,      // Khẩu phần mục tiêu
-            errorThreshold: 50,      // Ngưỡng sai số cho phép (>=50g dừng)
-            gramsPerServoRotation: 10 // Số gram thức ăn/1 lần servo quay
-        };
+  function deleteSchedule(id) {
+    if (confirm('Bạn có chắc muốn xóa lịch này?')) {
+      systemData.schedules = systemData.schedules.filter(s => s.id !== id);
+      saveData();
+      renderSchedules();
+    }
+  }
 
-        // Dữ liệu hệ thống
-        let systemData = {
-            currentFood: CONFIG.totalCapacity,
-            todayFeedings: [],
-            schedules: [],
-            connectionStats: {
-                lastPing: 28,
-                startTime: Date.now()
-            }
-        };
+  // =======================
+  // INIT (guarantee UI shows)
+  // =======================
+  window.addEventListener('load', () => {
+    // Nếu CSS/JS trước đó có ẩn body thì mở lại
+    document.body.style.visibility = 'visible';
+    document.body.style.opacity = '1';
 
-        // Load dữ liệu từ localStorage
-        function loadData() {
-            const saved = localStorage.getItem('petfeeder_data');
-            if (saved) {
-                try {
-                    const data = JSON.parse(saved);
+    // đảm bảo có 1 page hiển thị -> tránh trắng trang
+    ensureVisiblePage();
 
-                    // Kiểm tra nếu qua ngày mới thì reset
-                    const today = new Date().toDateString();
-                    if (data.lastDate !== today) {
-                        systemData.todayFeedings = [];
-                        systemData.currentFood = CONFIG.totalCapacity;
-                    } else {
-                        systemData.currentFood = data.currentFood || CONFIG.totalCapacity;
-                        systemData.todayFeedings = data.todayFeedings || [];
-                        systemData.schedules = data.schedules || [];
-                    }
-                } catch (e) {
-                    console.error('Error loading data:', e);
-                }
-            }
-            updateAllDisplays();
-        }
+    // setup slider an toàn
+    const slider = $('portionSlider');
+    const display = $('portionDisplay');
+    if (slider && display) {
+      display.textContent = slider.value + 'g';
+      slider.addEventListener('input', function () {
+        display.textContent = this.value + 'g';
+      });
+    }
 
-        // Lưu dữ liệu vào localStorage
-        function saveData() {
-            const dataToSave = {
-                currentFood: systemData.currentFood,
-                todayFeedings: systemData.todayFeedings,
-                schedules: systemData.schedules,
-                lastDate: new Date().toDateString()
-            };
-            localStorage.setItem('petfeeder_data', JSON.stringify(dataToSave));
-        }
+    // load UI data
+    loadData();
+    renderSchedules();
 
-        // Slider cho khẩu phần
-        const portionSlider = document.getElementById('portionSlider');
-        const portionDisplay = document.getElementById('portionDisplay');
+    // cảnh báo nếu đang mở file:// (không gọi được /api trên local file)
+    if (location.protocol === 'file:') {
+      console.warn('Bạn đang mở bằng file://. Muốn chạy ESP32 API thì hãy mở qua http://<ip-esp32>/');
+      // vẫn cho UI chạy local, nhưng status sẽ offline.
+      setOnlineUI(false);
+    } else {
+      refreshFromESP();
+    }
 
-        portionSlider.addEventListener('input', function() {
-            portionDisplay.textContent = this.value + 'g';
-        });
+    // timers: uptime 1s, status 3s
+    setInterval(updateUptime, CONFIG.uptimeTickMs);
+    setInterval(() => {
+      if (location.protocol !== 'file:') refreshFromESP();
+    }, CONFIG.statusPollMs);
+  });
 
-        // Hàm mô phỏng servo quay và thả thức ăn
-        function simulateServoFeeding(targetPortion) {
-            let actualAmount = 0;
-            let servoRotations = 0;
-            let foodReductions = 0;
-
-            // Mô phỏng servo quay cho đến khi đạt khẩu phần mục tiêu
-            while (actualAmount < targetPortion) {
-                // Mỗi lần servo quay
-                servoRotations++;
-
-                // Lượng thức ăn thả ra (có sai số ngẫu nhiên ±2g)
-                const foodReleased = CONFIG.gramsPerServoRotation + (Math.random() * 4 - 2);
-                actualAmount += foodReleased;
-
-                // Đếm số lần thức ăn trong khay giảm
-                foodReductions++;
-
-                // Kiểm tra điều kiện dừng
-                const error = actualAmount - targetPortion;
-
-                // Nếu thiếu: cho thêm
-                if (error < 0) {
-                    continue;
-                }
-
-                // Nếu dư >= 50g: dừng ngay
-                if (error >= CONFIG.errorThreshold) {
-                    break;
-                }
-
-                // Nếu sai số trong khoảng cho phép: dừng
-                if (Math.abs(error) < CONFIG.errorThreshold) {
-                    break;
-                }
-            }
-
-            return {
-                actualAmount: Math.round(actualAmount),
-                servoRotations: servoRotations,
-                foodReductions: foodReductions,
-                error: Math.round(actualAmount - targetPortion)
-            };
-        }
-
-        // Hàm cho ăn ngay
-        async function feedNow() {
-            const btn = document.getElementById('feedNowBtn');
-            const alertDiv = document.getElementById('feedAlert');
-            const targetPortion = parseInt(portionSlider.value);
-
-            // Kiểm tra thức ăn còn đủ không
-            if (systemData.currentFood < targetPortion) {
-                alertDiv.innerHTML = `
-                    <div class="alert alert-error">
-                        ⚠️ Không đủ thức ăn! Còn lại ${systemData.currentFood}g, cần ${targetPortion}g
-                    </div>
-                `;
-                return;
-            }
-
-            btn.disabled = true;
-            btn.innerHTML = '⏳ Đang cho ăn...';
-            alertDiv.innerHTML = '';
-
-            // Mô phỏng delay
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Thực hiện cho ăn
-            const result = simulateServoFeeding(targetPortion);
-
-            // Cập nhật lượng thức ăn còn lại
-            systemData.currentFood -= result.actualAmount;
-            if (systemData.currentFood < 0) systemData.currentFood = 0;
-
-            // Lưu lịch sử cho ăn
-            const feedingRecord = {
-                time: new Date().toLocaleTimeString('vi-VN'),
-                timestamp: Date.now(),
-                targetPortion: targetPortion,
-                actualAmount: result.actualAmount,
-                servoRotations: result.servoRotations,
-                foodReductions: result.foodReductions,
-                error: result.error,
-                remainingFood: systemData.currentFood
-            };
-
-            systemData.todayFeedings.push(feedingRecord);
-
-            // Lưu vào localStorage
-            saveData();
-
-            // Hiển thị kết quả (CHỈ SỬA CÚ PHÁP)
-            let message = `
-                <div class="alert alert-success">
-                    ✅ Đã cho ăn thành công!<br>
-                    🎯 Mục tiêu: ${targetPortion}g | Thực tế: ${result.actualAmount}g<br>
-                    🔧 Servo quay: ${result.servoRotations} lần<br>
-                    📉 Thức ăn giảm: ${result.foodReductions} lần<br>
-                    ${Math.abs(result.error) > 0
-                        ? `📊 Sai số: ${result.error > 0 ? '+' : ''}${result.error}g`
-                        : ''
-                    }
-                </div>
-            `;
-
-            if (Math.abs(result.error) >= CONFIG.errorThreshold) {
-                message = `
-                    <div class="alert alert-warning">
-                        ⚠️ Đã cho ăn nhưng sai số lớn!<br>
-                        🎯 Mục tiêu: ${targetPortion}g | Thực tế: ${result.actualAmount}g<br>
-                        🔧 Servo quay: ${result.servoRotations} lần<br>
-                        📊 Sai số: ${result.error > 0 ? '+' : ''}${result.error}g (≥ ${CONFIG.errorThreshold}g, đã dừng)
-                    </div>
-                `;
-            }
-
-            alertDiv.innerHTML = message;
-
-            // Cập nhật giao diện
-            updateAllDisplays();
-
-            btn.disabled = false;
-            btn.innerHTML = '🍽️ Cho ăn ngay';
-        }
-
-        // Cập nhật tất cả hiển thị
-        function updateAllDisplays() {
-            // Cập nhật lượng thức ăn còn lại
-            const foodPercent = Math.round((systemData.currentFood / CONFIG.totalCapacity) * 100);
-            document.getElementById('foodDisplay').textContent = systemData.currentFood + 'g';
-            document.getElementById('foodPercent').textContent = foodPercent + '%';
-            document.getElementById('foodProgress').style.width = foodPercent + '%';
-            document.getElementById('totalCapacity').textContent = CONFIG.totalCapacity + 'g';
-
-            // Tính tổng số lần cho ăn hôm nay
-            const todayCount = systemData.todayFeedings.length;
-            const todayTotal = systemData.todayFeedings.reduce((sum, f) => sum + f.actualAmount, 0);
-            const totalServo = systemData.todayFeedings.reduce((sum, f) => sum + f.servoRotations, 0);
-            const totalReductions = systemData.todayFeedings.reduce((sum, f) => sum + f.foodReductions, 0);
-
-            // Dashboard
-            document.getElementById('todayFeeds').textContent = todayCount;
-            document.getElementById('todayTotal').textContent = todayTotal + 'g';
-            document.getElementById('servoCount').textContent = totalServo;
-
-            // Statistics page
-            document.getElementById('statTodayCount').textContent = todayCount;
-            document.getElementById('statTodayAmount').textContent = todayTotal + 'g';
-            document.getElementById('statServoRotations').textContent = totalServo;
-            document.getElementById('statFoodReductions').textContent = totalReductions;
-
-            // Thống kê servo
-            const avgServo = todayCount > 0 ? Math.round(totalServo / todayCount * 10) / 10 : 0;
-            const avgFoodPerServo = totalServo > 0 ? Math.round(todayTotal / totalServo * 10) / 10 : 0;
-
-            document.getElementById('avgServoPerFeed').textContent = avgServo;
-            document.getElementById('totalServoToday').textContent = totalServo;
-            document.getElementById('avgFoodPerServo').textContent = avgFoodPerServo + 'g';
-
-            // Hiển thị lịch sử chi tiết
-            updateFeedingHistory();
-
-            // Cập nhật thời gian hoạt động
-            updateUptime();
-        }
-
-        // Hiển thị lịch sử cho ăn
-        function updateFeedingHistory() {
-            const historyDiv = document.getElementById('feedingHistory');
-
-            if (systemData.todayFeedings.length === 0) {
-                historyDiv.innerHTML = `
-                    <p style="text-align: center; color: var(--text-mid); padding: 20px;">
-                        Chưa có dữ liệu hôm nay
-                    </p>
-                `;
-                return;
-            }
-
-            // Sắp xếp theo thời gian mới nhất
-            const sorted = [...systemData.todayFeedings].reverse();
-
-            historyDiv.innerHTML = sorted.map((feed, index) => `
-                <div class="history-item">
-                    <div>
-                        <div class="history-time">🕐 ${feed.time}</div>
-                        <div class="history-servo">
-                            🔧 Servo: ${feed.servoRotations} lần | 
-                            📉 Giảm: ${feed.foodReductions} lần
-                        </div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div class="history-amount">
-                            ${feed.actualAmount}g
-                            ${feed.error !== 0
-                                ? `<span style="font-size: 0.85rem; color: var(--text-mid);">(${feed.error > 0 ? '+' : ''}${feed.error}g)</span>`
-                                : ''
-                            }
-                        </div>
-                        <div style="font-size: 0.85rem; color: var(--text-mid);">
-                            Mục tiêu: ${feed.targetPortion}g
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Cập nhật thời gian hoạt động
-        function updateUptime() {
-            const uptime = Date.now() - systemData.connectionStats.startTime;
-            const hours = Math.floor(uptime / 3600000);
-            const minutes = Math.floor((uptime % 3600000) / 60000);
-
-            // CHỈ SỬA CÚ PHÁP
-            document.getElementById('uptime').textContent = `${hours}h ${minutes}m`;
-        }
-
-        // Navigation (CHỈ SỬA event -> nhận btnEl)
-        function showPage(pageName, btnEl) {
-            document.querySelectorAll('.page-section').forEach(section => {
-                section.classList.remove('active');
-            });
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-
-            document.getElementById(pageName + '-page').classList.add('active');
-            if (btnEl) btnEl.classList.add('active');
-
-            if (pageName === 'statistics') {
-                updateAllDisplays();
-            }
-        }
-
-        // Schedule Modal
-        function openScheduleModal() {
-            document.getElementById('scheduleModal').classList.add('active');
-        }
-
-        function closeScheduleModal() {
-            document.getElementById('scheduleModal').classList.remove('active');
-        }
-
-        function saveSchedule() {
-            const time = document.getElementById('scheduleTime').value;
-            const portion = parseInt(document.getElementById('schedulePortion').value);
-
-            systemData.schedules.push({
-                id: Date.now(),
-                time: time,
-                portion: portion
-            });
-
-            saveData();
-            renderSchedules();
-            closeScheduleModal();
-
-            alert('✅ Đã thêm lịch cho ăn lúc ' + time + ' với khẩu phần ' + portion + 'g');
-        }
-
-        function renderSchedules() {
-            const listDiv = document.getElementById('scheduleList');
-
-            if (systemData.schedules.length === 0) {
-                listDiv.innerHTML = `
-                    <p style="text-align: center; color: var(--text-mid); padding: 20px;">
-                        Chưa có lịch nào. Nhấn "Thêm lịch mới" để tạo.
-                    </p>
-                `;
-                return;
-            }
-
-            listDiv.innerHTML = systemData.schedules.map(schedule => `
-                <div class="schedule-item">
-                    <div>
-                        <div class="schedule-time">${schedule.time}</div>
-                        <div style="color: var(--text-mid); font-size: 0.9rem; margin-top: 4px;">
-                            Khẩu phần: ${schedule.portion}g
-                        </div>
-                    </div>
-                    <div class="schedule-actions">
-                        <button class="icon-btn icon-btn-delete" onclick="deleteSchedule(${schedule.id})">🗑️</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function deleteSchedule(id) {
-            if (confirm('Bạn có chắc muốn xóa lịch này?')) {
-                systemData.schedules = systemData.schedules.filter(s => s.id !== id);
-                saveData();
-                renderSchedules();
-            }
-        }
-
-        // Khởi tạo khi load trang
-        window.addEventListener('load', () => {
-            loadData();
-            renderSchedules();
-
-            // Cập nhật mỗi giây
-            setInterval(() => {
-                updateUptime();
-                document.getElementById('lastUpdate').textContent = 'Vừa xong';
-            }, 1000);
-        });
-    </script>
-</body>
-</html>
+  // =======================
+  // EXPORT for onclick in HTML
+  // =======================
+  window.feedNow = feedNow;
+  window.showPage = showPage;
+  window.openScheduleModal = openScheduleModal;
+  window.closeScheduleModal = closeScheduleModal;
+  window.saveSchedule = saveSchedule;
+  window.renderSchedules = renderSchedules;
+  window.deleteSchedule = deleteSchedule;
+</script>
