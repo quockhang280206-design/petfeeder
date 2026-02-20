@@ -98,10 +98,7 @@
       color: var(--primary-dark);
     }
 
-    .nav-links {
-      display: flex;
-      gap: 8px;
-    }
+    .nav-links { display: flex; gap: 8px; }
 
     .nav-btn {
       padding: 10px 20px;
@@ -114,23 +111,13 @@
       transition: all 0.3s ease;
     }
 
-    .nav-btn:hover {
-      background: var(--bg-cream);
-      color: var(--primary-dark);
-    }
-
-    .nav-btn.active {
-      background: var(--primary);
-      color: white;
-    }
+    .nav-btn:hover { background: var(--bg-cream); color: var(--primary-dark); }
+    .nav-btn.active { background: var(--primary); color: white; }
 
     .page-section { display: none; }
     .page-section.active { display: block; }
 
-    header {
-      text-align: center;
-      margin-bottom: 60px;
-    }
+    header { text-align: center; margin-bottom: 60px; }
 
     h1 {
       font-family: 'Playfair Display', serif;
@@ -140,11 +127,7 @@
       margin-bottom: 12px;
     }
 
-    .subtitle {
-      font-size: 1.1rem;
-      color: var(--text-mid);
-      font-weight: 500;
-    }
+    .subtitle { font-size: 1.1rem; color: var(--text-mid); font-weight: 500; }
 
     .dashboard {
       display: grid;
@@ -161,10 +144,7 @@
       transition: all 0.3s ease;
     }
 
-    .card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 16px 48px rgba(0,0,0,0.12);
-    }
+    .card:hover { transform: translateY(-8px); box-shadow: 0 16px 48px rgba(0,0,0,0.12); }
 
     .card-header {
       display: flex;
@@ -254,11 +234,7 @@
       box-shadow: 0 8px 24px rgba(212, 165, 116, 0.3);
     }
 
-    .btn-primary:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 12px 32px rgba(212, 165, 116, 0.4);
-    }
-
+    .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(212, 165, 116, 0.4); }
     .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn-large { width: 100%; padding: 24px; font-size: 1.2rem; }
 
@@ -278,11 +254,7 @@
       margin-bottom: 16px;
     }
 
-    .feed-control p {
-      color: rgba(255,255,255,0.9);
-      font-size: 1.1rem;
-      margin-bottom: 32px;
-    }
+    .feed-control p { color: rgba(255,255,255,0.9); font-size: 1.1rem; margin-bottom: 32px; }
 
     .slider-control { margin: 32px 0; }
     .slider-label {
@@ -338,22 +310,9 @@
       transition: all 0.3s ease;
     }
 
-    .stat-box:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-    }
-
-    .stat-box-value {
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--primary-dark);
-    }
-
-    .stat-box-label {
-      font-size: 0.85rem;
-      color: var(--text-mid);
-      margin-top: 4px;
-    }
+    .stat-box:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+    .stat-box-value { font-size: 2rem; font-weight: 700; color: var(--primary-dark); }
+    .stat-box-label { font-size: 0.85rem; color: var(--text-mid); margin-top: 4px; }
 
     .history-item {
       background: white;
@@ -366,11 +325,7 @@
       transition: all 0.3s ease;
     }
 
-    .history-item:hover {
-      transform: translateX(8px);
-      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-    }
-
+    .history-item:hover { transform: translateX(8px); box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
     .history-time { font-weight: 700; color: var(--primary-dark); }
     .history-amount { font-weight: 600; color: var(--secondary); }
     .history-servo { font-size: 0.85rem; color: var(--text-mid); margin-top: 4px; }
@@ -378,10 +333,8 @@
     .modal {
       display: none;
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       background: rgba(0,0,0,0.6);
       z-index: 1000;
       justify-content: center;
@@ -403,10 +356,8 @@
 
     .modal-close {
       position: absolute;
-      top: 20px;
-      right: 20px;
-      width: 40px;
-      height: 40px;
+      top: 20px; right: 20px;
+      width: 40px; height: 40px;
       border-radius: 50%;
       border: none;
       background: var(--accent);
@@ -451,8 +402,7 @@
     .schedule-actions { display: flex; gap: 8px; }
 
     .icon-btn {
-      width: 40px;
-      height: 40px;
+      width: 40px; height: 40px;
       border-radius: 12px;
       border: none;
       cursor: pointer;
@@ -461,7 +411,6 @@
     }
 
     .icon-btn:hover { transform: scale(1.1); }
-    .icon-btn-edit { background: var(--secondary); color: white; }
     .icon-btn-delete { background: var(--accent); color: white; }
 
     @media (max-width: 768px) {
@@ -483,9 +432,9 @@
     <nav>
       <div class="nav-brand">🐾 PetFeeder Smart</div>
       <div class="nav-links">
-        <button class="nav-btn active" onclick="showPage('dashboard')">Dashboard</button>
-        <button class="nav-btn" onclick="showPage('schedules')">Lịch trình</button>
-        <button class="nav-btn" onclick="showPage('statistics')">Thống kê</button>
+        <button class="nav-btn active" onclick="showPage(event,'dashboard')">Dashboard</button>
+        <button class="nav-btn" onclick="showPage(event,'schedules')">Lịch trình</button>
+        <button class="nav-btn" onclick="showPage(event,'statistics')">Thống kê</button>
       </div>
     </nav>
 
@@ -523,7 +472,7 @@
             <h3 class="card-title"><span class="card-icon">🍖</span> Thức ăn</h3>
           </div>
           <div class="stat-value" id="foodDisplay">1000g</div>
-          <p class="stat-label">Còn lại trong máy (mô phỏng)</p>
+          <p class="stat-label">Mô phỏng (web)</p>
           <div class="progress-container">
             <div class="progress-bar">
               <div class="progress-fill" id="foodProgress" style="width: 100%"></div>
@@ -540,10 +489,10 @@
             <h3 class="card-title"><span class="card-icon">⏰</span> Hôm nay</h3>
           </div>
           <div class="stat-value"><span id="todayFeeds">0</span> lần</div>
-          <p class="stat-label">Số lần cho ăn (mô phỏng)</p>
+          <p class="stat-label">Lệnh đã gửi (web)</p>
           <hr style="margin: 20px 0; border: none; border-top: 1px solid rgba(0,0,0,0.08);">
-          <p style="color: var(--text-mid);"><strong>Tổng đã cho:</strong> <span id="todayTotal">0g</span></p>
-          <p style="color: var(--text-mid); margin-top: 8px;"><strong>Servo quay:</strong> <span id="servoCount">0</span> lần</p>
+          <p style="color: var(--text-mid);"><strong>Tổng (mô phỏng):</strong> <span id="todayTotal">0g</span></p>
+          <p style="color: var(--text-mid); margin-top: 8px;"><strong>Số lệnh:</strong> <span id="servoCount">0</span> lần</p>
         </div>
       </div>
 
@@ -558,7 +507,7 @@
           </div>
           <input type="range" id="portionSlider" min="50" max="300" value="200" step="10">
           <p style="color: rgba(255,255,255,0.8); font-size: 0.9rem; margin-top: 12px;">
-            Ghi chú: ESP32 hiện chỉ quay servo theo thời gian, chưa cân theo gram.
+            Lưu ý: ESP32 hiện quay theo thời gian (FEED_OPEN_MS). Slider chỉ để ghi log.
           </p>
         </div>
 
@@ -600,45 +549,27 @@
         <div class="stats-grid">
           <div class="stat-box">
             <div class="stat-box-value" id="statTodayCount">0</div>
-            <div class="stat-box-label">Số lần cho ăn</div>
+            <div class="stat-box-label">Số lệnh</div>
           </div>
           <div class="stat-box">
             <div class="stat-box-value" id="statTodayAmount">0g</div>
-            <div class="stat-box-label">Tổng lượng thức ăn</div>
+            <div class="stat-box-label">Tổng (mô phỏng)</div>
           </div>
           <div class="stat-box">
             <div class="stat-box-value" id="statServoRotations">0</div>
-            <div class="stat-box-label">Số lần servo quay</div>
+            <div class="stat-box-label">Lệnh gửi</div>
           </div>
           <div class="stat-box">
             <div class="stat-box-value" id="statFoodReductions">0</div>
-            <div class="stat-box-label">Lần thức ăn giảm</div>
+            <div class="stat-box-label">--</div>
           </div>
         </div>
       </div>
 
       <div class="card" style="margin-top: 24px;">
-        <h3 class="card-title" style="margin-bottom: 20px;"><span class="card-icon">📝</span> Chi tiết từng lần cho ăn</h3>
+        <h3 class="card-title" style="margin-bottom: 20px;"><span class="card-icon">📝</span> Lịch sử gửi lệnh</h3>
         <div id="feedingHistory">
           <p style="text-align: center; color: var(--text-mid); padding: 20px;">Chưa có dữ liệu hôm nay</p>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top: 24px;">
-        <h3 class="card-title"><span class="card-icon">🔧</span> Hoạt động Servo Motor</h3>
-        <div class="stats-grid">
-          <div class="stat-box">
-            <div class="stat-box-value" id="avgServoPerFeed">0</div>
-            <div class="stat-box-label">Trung bình/lần</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-box-value" id="totalServoToday">0</div>
-            <div class="stat-box-label">Tổng lần quay</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-box-value" id="avgFoodPerServo">0g</div>
-            <div class="stat-box-label">Thức ăn/lần quay</div>
-          </div>
         </div>
       </div>
 
@@ -647,11 +578,11 @@
         <div class="stats-grid">
           <div class="stat-box">
             <div class="stat-box-value" id="avgPing">--</div>
-            <div class="stat-box-label">Ping trung bình</div>
+            <div class="stat-box-label">Ping</div>
           </div>
           <div class="stat-box">
             <div class="stat-box-value" id="successRate">--</div>
-            <div class="stat-box-label">Tỷ lệ thành công</div>
+            <div class="stat-box-label">Tỷ lệ OK</div>
           </div>
           <div class="stat-box">
             <div class="stat-box-value" id="uptime">--</div>
@@ -690,8 +621,7 @@
   <script>
     // ====================== Cấu hình web ======================
     const CONFIG = {
-      totalCapacity: 1000,     // chỉ mô phỏng
-      gramsPerServoRotation: 10 // chỉ mô phỏng
+      totalCapacity: 1000
     };
 
     // Nếu mở từ GitHub Pages -> gọi API về 192.168.4.1
@@ -755,6 +685,7 @@
     // ====================== UI helpers ======================
     const portionSlider = document.getElementById('portionSlider');
     const portionDisplay = document.getElementById('portionDisplay');
+
     portionSlider.addEventListener('input', function() {
       portionDisplay.textContent = this.value + 'g';
     });
@@ -770,12 +701,13 @@
     async function pollStatus() {
       const t0 = performance.now();
       try {
-        const res = await fetch(`${API_BASE}/api/status`, { method: 'GET' });
+        const res = await fetch(`${API_BASE}/api/status`, { method: 'GET', cache: 'no-store' });
         const data = await res.json();
         const ping = Math.round(performance.now() - t0);
 
         systemData.connectionStats.lastPing = ping;
         systemData.connectionStats.okCount++;
+
         systemData.esp = {
           rtc_ok: !!data.rtc_ok,
           feeding: !!data.feeding,
@@ -807,8 +739,10 @@
       const fail = systemData.connectionStats.failCount;
       const total = ok + fail;
       const rate = total > 0 ? Math.round((ok / total) * 100) : 0;
+
       document.getElementById('successRate').textContent = `${rate}%`;
-      document.getElementById('avgPing').textContent = (systemData.connectionStats.lastPing == null) ? '--' : `${systemData.connectionStats.lastPing}ms`;
+      document.getElementById('avgPing').textContent =
+        (systemData.connectionStats.lastPing == null) ? '--' : `${systemData.connectionStats.lastPing}ms`;
     }
 
     // ====================== ESP32 API: feed ======================
@@ -822,47 +756,49 @@
       alertDiv.innerHTML = '';
 
       try {
-        const res = await fetch(`${API_BASE}/api/feed`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ portion: targetPortion })
-        });
+        // ESP32 hiện không đọc JSON body -> gửi POST trống là chuẩn nhất
+        const res = await fetch(`${API_BASE}/api/feed`, { method: 'POST' });
 
-        const data = await res.json();
+        // đọc json nếu có, không thì fallback text
+        let data = null;
+        const ct = (res.headers.get('content-type') || '').toLowerCase();
+        if (ct.includes('application/json')) {
+          data = await res.json();
+        } else {
+          const txt = await res.text();
+          data = { ok: res.ok, raw: txt };
+        }
 
-        if (data.ok) {
-          // Cập nhật mô phỏng lịch sử trên web (ESP32 không trả actual)
-          const feedingRecord = {
+        if (data && data.ok) {
+          // log mô phỏng trên web (chỉ để theo dõi)
+          const record = {
             time: new Date().toLocaleTimeString('vi-VN'),
             timestamp: Date.now(),
             targetPortion: targetPortion,
-            actualAmount: targetPortion,   // mô phỏng = target
-            servoRotations: 1,             // mô phỏng
-            foodReductions: 1,             // mô phỏng
-            error: 0,
-            remainingFood: systemData.currentFood
+            actualAmount: targetPortion
           };
-          systemData.todayFeedings.push(feedingRecord);
+          systemData.todayFeedings.push(record);
           saveData();
 
           alertDiv.innerHTML = `
             <div class="alert alert-success">
-              ✅ ESP32 đã nhận lệnh. Servo sẽ quay theo chương trình.
+              ✅ ESP32 đã nhận lệnh /api/feed. Servo sẽ quay (FEED_OPEN_MS).
             </div>
           `;
           updateAllDisplays();
-          pollStatus(); // cập nhật feeding true/false nhanh hơn
+          pollStatus();
         } else {
+          const errMsg = (data && data.err) ? data.err : 'unknown';
           alertDiv.innerHTML = `
             <div class="alert alert-warning">
-              ⚠️ ESP32 báo bận: ${data.err || 'unknown'}
+              ⚠️ ESP32 báo không OK: ${errMsg}
             </div>
           `;
         }
       } catch (e) {
         alertDiv.innerHTML = `
           <div class="alert alert-error">
-            ❌ Không gọi được /api/feed. Lỗi: ${e}
+            ❌ Không gọi được /api/feed. ${String(e)}
           </div>
         `;
       } finally {
@@ -873,6 +809,7 @@
 
     // ====================== Hiển thị mô phỏng ======================
     function updateAllDisplays() {
+      // mô phỏng thức ăn: không trừ thật để tránh lệch với ESP32
       const foodPercent = Math.round((systemData.currentFood / CONFIG.totalCapacity) * 100);
       document.getElementById('foodDisplay').textContent = systemData.currentFood + 'g';
       document.getElementById('foodPercent').textContent = foodPercent + '%';
@@ -881,24 +818,15 @@
 
       const todayCount = systemData.todayFeedings.length;
       const todayTotal = systemData.todayFeedings.reduce((sum, f) => sum + (f.actualAmount || 0), 0);
-      const totalServo = systemData.todayFeedings.reduce((sum, f) => sum + (f.servoRotations || 0), 0);
-      const totalReductions = systemData.todayFeedings.reduce((sum, f) => sum + (f.foodReductions || 0), 0);
 
       document.getElementById('todayFeeds').textContent = todayCount;
       document.getElementById('todayTotal').textContent = todayTotal + 'g';
-      document.getElementById('servoCount').textContent = totalServo;
+      document.getElementById('servoCount').textContent = todayCount;
 
       document.getElementById('statTodayCount').textContent = todayCount;
       document.getElementById('statTodayAmount').textContent = todayTotal + 'g';
-      document.getElementById('statServoRotations').textContent = totalServo;
-      document.getElementById('statFoodReductions').textContent = totalReductions;
-
-      const avgServo = todayCount > 0 ? Math.round((totalServo / todayCount) * 10) / 10 : 0;
-      const avgFoodPerServo = totalServo > 0 ? Math.round((todayTotal / totalServo) * 10) / 10 : 0;
-
-      document.getElementById('avgServoPerFeed').textContent = avgServo;
-      document.getElementById('totalServoToday').textContent = totalServo;
-      document.getElementById('avgFoodPerServo').textContent = avgFoodPerServo + 'g';
+      document.getElementById('statServoRotations').textContent = todayCount;
+      document.getElementById('statFoodReductions').textContent = '--';
 
       updateFeedingHistory();
       updateUptime();
@@ -917,11 +845,11 @@
         <div class="history-item">
           <div>
             <div class="history-time">🕐 ${feed.time}</div>
-            <div class="history-servo">🔧 Servo: ${feed.servoRotations} lần | 📉 Giảm: ${feed.foodReductions} lần</div>
+            <div class="history-servo">📤 Đã gửi lệnh /api/feed</div>
           </div>
           <div style="text-align:right;">
             <div class="history-amount">${feed.actualAmount}g</div>
-            <div style="font-size:0.85rem;color:var(--text-mid);">Mục tiêu: ${feed.targetPortion}g</div>
+            <div style="font-size:0.85rem;color:var(--text-mid);">Mục tiêu (log): ${feed.targetPortion}g</div>
           </div>
         </div>
       `).join('');
@@ -935,12 +863,12 @@
     }
 
     // ====================== Navigation ======================
-    function showPage(pageName) {
+    function showPage(evt, pageName) {
       document.querySelectorAll('.page-section').forEach(section => section.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
 
       document.getElementById(pageName + '-page').classList.add('active');
-      event.target.classList.add('active');
+      if (evt && evt.target) evt.target.classList.add('active');
 
       if (pageName === 'statistics') updateAllDisplays();
     }
@@ -1000,14 +928,9 @@
       renderSchedules();
       updateUptime();
 
-      // Poll status ESP32 mỗi 2 giây
       pollStatus();
       setInterval(pollStatus, 2000);
-
-      // Cập nhật uptime web mỗi giây
-      setInterval(() => {
-        updateUptime();
-      }, 1000);
+      setInterval(updateUptime, 1000);
     });
   </script>
 </body>
