@@ -506,7 +506,6 @@
             <span id="portionDisplay">200g</span>
           </div>
 
-          <!-- CHỈNH: max 1000g, step 50g -->
           <input type="range" id="portionSlider" min="50" max="1000" value="200" step="50">
 
           <p style="color: rgba(255,255,255,0.8); font-size: 0.9rem; margin-top: 12px;">
@@ -523,7 +522,7 @@
     <div id="schedules-page" class="page-section">
       <header>
         <h1>Lịch trình cho ăn</h1>
-        <p class="subtitle">Lưu lịch trên trình duyệt (chưa đồng bộ ESP32)</p>
+        <p class="subtitle">Lịch được lưu trên ESP32 (RTC chạy tự động)</p>
       </header>
 
       <div class="card">
@@ -609,13 +608,7 @@
 
       <div class="form-group">
         <label class="form-label">Khẩu phần mục tiêu (gram)</label>
-
-        <!-- CHỈNH: max 1000g, step 50g -->
         <input type="number" class="form-input" id="schedulePortion" value="200" min="50" max="1000" step="50">
-
-        <p style="color: var(--text-mid); font-size: 0.85rem; margin-top: 4px;">
-          Web đang lưu lịch ở localStorage (chưa gửi lịch sang ESP32).
-        </p>
       </div>
 
       <div style="margin-top: 32px;">
@@ -626,9 +619,7 @@
 
   <script>
     // ====================== Cấu hình web ======================
-    const CONFIG = {
-      totalCapacity: 1000
-    };
+    const CONFIG = { totalCapacity: 1000 };
 
     // Nếu mở từ GitHub Pages -> gọi API về 192.168.4.1
     // Nếu mở từ ESP32 (SPIFFS) -> gọi API cùng origin
@@ -640,7 +631,7 @@
     let systemData = {
       currentFood: CONFIG.totalCapacity,
       todayFeedings: [],
-      schedules: [],
+      schedules: [], // hiển thị lịch đang enable trên ESP32
       connectionStats: {
         lastPing: null,
         startTime: Date.now(),
@@ -656,7 +647,7 @@
       }
     };
 
-    // ====================== LocalStorage ======================
+    // ====================== LocalStorage (chỉ dùng cho thống kê web) ======================
     function loadData() {
       const saved = localStorage.getItem('petfeeder_data');
       if (saved) {
@@ -669,7 +660,6 @@
           } else {
             systemData.currentFood = data.currentFood || CONFIG.totalCapacity;
             systemData.todayFeedings = data.todayFeedings || [];
-            systemData.schedules = data.schedules || [];
           }
         } catch (e) {
           console.error('Error loading data:', e);
@@ -682,7 +672,6 @@
       const dataToSave = {
         currentFood: systemData.currentFood,
         todayFeedings: systemData.todayFeedings,
-        schedules: systemData.schedules,
         lastDate: new Date().toDateString()
       };
       localStorage.setItem('petfeeder_data', JSON.stringify(dataToSave));
@@ -701,6 +690,38 @@
       badge.classList.remove('status-online', 'status-offline');
       badge.classList.add(isOnline ? 'status-online' : 'status-offline');
       badge.textContent = isOnline ? 'Online' : 'Offline';
+    }
+
+    // ====================== Schedules: API ESP32 ======================
+    async function fetchSchedulesFromESP() {
+      try {
+        const res = await fetch(`${API_BASE}/api/schedules`, { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const list = await res.json(); // [{slot,time,g,en},...]
+
+        systemData.schedules = list
+          .filter(x => x.en === 1)
+          .map(x => ({ id: x.slot, time: x.time, portion: x.g }));
+
+        renderSchedules();
+      } catch (e) {
+        renderSchedules();
+      }
+    }
+
+    async function addScheduleToESP(time, grams) {
+      const url = `${API_BASE}/api/schedule/add?time=${encodeURIComponent(time)}&g=${encodeURIComponent(grams)}`;
+      const res = await fetch(url, { method: 'POST' });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.err || 'add failed');
+      return data.slot;
+    }
+
+    async function deleteScheduleOnESP(slot) {
+      const url = `${API_BASE}/api/schedule/delete?slot=${encodeURIComponent(slot)}`;
+      const res = await fetch(url, { method: 'GET' });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.err || 'delete failed');
     }
 
     // ====================== ESP32 API: status ======================
@@ -762,17 +783,12 @@
       alertDiv.innerHTML = '';
 
       try {
-        // CHỈNH: gửi g qua query để ESP32 tính thời gian mở servo
         const res = await fetch(`${API_BASE}/api/feed?g=${encodeURIComponent(targetPortion)}`, { method: 'POST' });
 
         let data = null;
         const ct = (res.headers.get('content-type') || '').toLowerCase();
-        if (ct.includes('application/json')) {
-          data = await res.json();
-        } else {
-          const txt = await res.text();
-          data = { ok: res.ok, raw: txt };
-        }
+        if (ct.includes('application/json')) data = await res.json();
+        else data = { ok: res.ok, raw: await res.text() };
 
         if (data && data.ok) {
           const record = {
@@ -875,9 +891,10 @@
       if (evt && evt.target) evt.target.classList.add('active');
 
       if (pageName === 'statistics') updateAllDisplays();
+      if (pageName === 'schedules') fetchSchedulesFromESP(); // mỗi lần mở tab lịch thì refresh
     }
 
-    // ====================== Schedules (local) ======================
+    // ====================== Schedules UI ======================
     function openScheduleModal() {
       document.getElementById('scheduleModal').classList.add('active');
     }
@@ -886,26 +903,32 @@
       document.getElementById('scheduleModal').classList.remove('active');
     }
 
-    function saveSchedule() {
+    async function saveSchedule() {
       const time = document.getElementById('scheduleTime').value;
       const portion = parseInt(document.getElementById('schedulePortion').value, 10);
 
-      systemData.schedules.push({ id: Date.now(), time, portion });
-      saveData();
-      renderSchedules();
-      closeScheduleModal();
-      alert('✅ Đã thêm lịch (lưu trên web) lúc ' + time + ' với khẩu phần ' + portion + 'g');
+      try {
+        await addScheduleToESP(time, portion);
+        closeScheduleModal();
+        alert('✅ Đã lưu lịch lên ESP32: ' + time + ' - ' + portion + 'g');
+        await fetchSchedulesFromESP();
+      } catch (e) {
+        alert('❌ Không lưu được lịch lên ESP32. ' + String(e));
+      }
     }
 
     function renderSchedules() {
       const listDiv = document.getElementById('scheduleList');
 
-      if (systemData.schedules.length === 0) {
+      if (!systemData.schedules || systemData.schedules.length === 0) {
         listDiv.innerHTML = `<p style="text-align:center;color:var(--text-mid);padding:20px;">Chưa có lịch nào. Nhấn "Thêm lịch mới" để tạo.</p>`;
         return;
       }
 
-      listDiv.innerHTML = systemData.schedules.map(schedule => `
+      // sắp theo thời gian cho dễ nhìn
+      const sorted = [...systemData.schedules].sort((a,b) => a.time.localeCompare(b.time));
+
+      listDiv.innerHTML = sorted.map(schedule => `
         <div class="schedule-item">
           <div>
             <div class="schedule-time">${schedule.time}</div>
@@ -918,23 +941,27 @@
       `).join('');
     }
 
-    function deleteSchedule(id) {
-      if (confirm('Bạn có chắc muốn xóa lịch này?')) {
-        systemData.schedules = systemData.schedules.filter(s => s.id !== id);
-        saveData();
-        renderSchedules();
+    async function deleteSchedule(id) {
+      if (!confirm('Bạn có chắc muốn xóa lịch này?')) return;
+
+      try {
+        await deleteScheduleOnESP(id);
+        await fetchSchedulesFromESP();
+      } catch (e) {
+        alert('❌ Không xóa được lịch trên ESP32. ' + String(e));
       }
     }
 
     // ====================== Init ======================
     window.addEventListener('load', () => {
       loadData();
-      renderSchedules();
       updateUptime();
 
       pollStatus();
       setInterval(pollStatus, 2000);
       setInterval(updateUptime, 1000);
+
+      fetchSchedulesFromESP();
     });
   </script>
 </body>
