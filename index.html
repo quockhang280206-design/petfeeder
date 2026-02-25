@@ -505,9 +505,12 @@
             <span>Khẩu phần mục tiêu</span>
             <span id="portionDisplay">200g</span>
           </div>
-          <input type="range" id="portionSlider" min="50" max="300" value="200" step="10">
+
+          <!-- CHỈNH: max 1000g, step 50g -->
+          <input type="range" id="portionSlider" min="50" max="1000" value="200" step="50">
+
           <p style="color: rgba(255,255,255,0.8); font-size: 0.9rem; margin-top: 12px;">
-            Lưu ý: ESP32 hiện quay theo thời gian (FEED_OPEN_MS). Slider chỉ để ghi log.
+            Lưu ý: ESP32 nhận tham số g (gram). Mỗi 50g tương ứng 2 giây mở servo.
           </p>
         </div>
 
@@ -606,7 +609,10 @@
 
       <div class="form-group">
         <label class="form-label">Khẩu phần mục tiêu (gram)</label>
-        <input type="number" class="form-input" id="schedulePortion" value="200" min="50" max="300" step="10">
+
+        <!-- CHỈNH: max 1000g, step 50g -->
+        <input type="number" class="form-input" id="schedulePortion" value="200" min="50" max="1000" step="50">
+
         <p style="color: var(--text-mid); font-size: 0.85rem; margin-top: 4px;">
           Web đang lưu lịch ở localStorage (chưa gửi lịch sang ESP32).
         </p>
@@ -756,10 +762,9 @@
       alertDiv.innerHTML = '';
 
       try {
-        // ESP32 hiện không đọc JSON body -> gửi POST trống là chuẩn nhất
-        const res = await fetch(`${API_BASE}/api/feed`, { method: 'POST' });
+        // CHỈNH: gửi g qua query để ESP32 tính thời gian mở servo
+        const res = await fetch(`${API_BASE}/api/feed?g=${encodeURIComponent(targetPortion)}`, { method: 'POST' });
 
-        // đọc json nếu có, không thì fallback text
         let data = null;
         const ct = (res.headers.get('content-type') || '').toLowerCase();
         if (ct.includes('application/json')) {
@@ -770,7 +775,6 @@
         }
 
         if (data && data.ok) {
-          // log mô phỏng trên web (chỉ để theo dõi)
           const record = {
             time: new Date().toLocaleTimeString('vi-VN'),
             timestamp: Date.now(),
@@ -780,9 +784,10 @@
           systemData.todayFeedings.push(record);
           saveData();
 
+          const openMsInfo = (typeof data.open_ms === 'number') ? ` (open_ms=${data.open_ms})` : '';
           alertDiv.innerHTML = `
             <div class="alert alert-success">
-              ✅ ESP32 đã nhận lệnh /api/feed. Servo sẽ quay (FEED_OPEN_MS).
+              ✅ ESP32 đã nhận lệnh /api/feed?g=${targetPortion}.${openMsInfo}
             </div>
           `;
           updateAllDisplays();
@@ -809,7 +814,6 @@
 
     // ====================== Hiển thị mô phỏng ======================
     function updateAllDisplays() {
-      // mô phỏng thức ăn: không trừ thật để tránh lệch với ESP32
       const foodPercent = Math.round((systemData.currentFood / CONFIG.totalCapacity) * 100);
       document.getElementById('foodDisplay').textContent = systemData.currentFood + 'g';
       document.getElementById('foodPercent').textContent = foodPercent + '%';
